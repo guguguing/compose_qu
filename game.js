@@ -2,17 +2,29 @@
 (() => { "use strict";
   const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector } = Matter;
   const W=520,H=700,WALL=28,PLAY_WIDTH=430,PLAY_LEFT=(W-PLAY_WIDTH)/2,PLAY_RIGHT=PLAY_LEFT+PLAY_WIDTH,FLOOR_Y=650,DANGER_Y=190;
+  const SIZE_SCALE=0.8; // 难度旋钮:整体缩放所有水果的大小。越大越难(越容易堆满),越小越简单;建议 0.6~1.5
+  const BASE_RADII=[18,25,34,44,56,69,83,98,114,132,151];
   const LEVELS=[
-    {radius:18,points:1,image:"assets/fruit-0.jpg",fallbackImage:"assets/fruit-0.svg",name:"樱桃"},{radius:25,points:3,image:"assets/fruit-1.jpg",fallbackImage:"assets/fruit-1.svg",name:"草莓"},{radius:34,points:6,image:"assets/fruit-2.jpg",fallbackImage:"assets/fruit-2.svg",name:"葡萄"},{radius:44,points:10,image:"assets/fruit-3.jpg",fallbackImage:"assets/fruit-3.svg",name:"橘子"},{radius:56,points:15,image:"assets/fruit-4.jpg",fallbackImage:"assets/fruit-4.svg",name:"苹果"},{radius:69,points:21,image:"assets/fruit-5.jpg",fallbackImage:"assets/fruit-5.svg",name:"桃子"},{radius:83,points:28,image:"assets/fruit-6.jpg",fallbackImage:"assets/fruit-6.svg",name:"梨子"},{radius:98,points:36,image:"assets/fruit-7.jpg",fallbackImage:"assets/fruit-7.svg",name:"菠萝"},{radius:114,points:45,image:"assets/fruit-8.jpg",fallbackImage:"assets/fruit-8.svg",name:"椰子"},{radius:132,points:55,image:"assets/fruit-9.jpg",fallbackImage:"assets/fruit-9.svg",name:"西瓜"},{radius:151,points:70,image:"assets/fruit-10.jpg",fallbackImage:"assets/fruit-10.svg",name:"彩虹瓜"}
-  ];
+    {points:1,image:"assets/fruit-0.jpg",fallbackImage:"assets/fruit-0.svg",name:"樱桃"},
+    {points:3,image:"assets/fruit-1.jpg",fallbackImage:"assets/fruit-1.svg",name:"草莓"},
+    {points:6,image:"assets/fruit-2.jpg",fallbackImage:"assets/fruit-2.svg",name:"葡萄"},
+    {points:10,image:"assets/fruit-3.jpg",fallbackImage:"assets/fruit-3.svg",name:"橘子"},
+    {points:15,image:"assets/fruit-4.jpg",fallbackImage:"assets/fruit-4.svg",name:"苹果"},
+    {points:21,image:"assets/fruit-5.jpg",fallbackImage:"assets/fruit-5.svg",name:"桃子"},
+    {points:28,image:"assets/fruit-6.jpg",fallbackImage:"assets/fruit-6.svg",name:"梨子"},
+    {points:36,image:"assets/fruit-7.jpg",fallbackImage:"assets/fruit-7.svg",name:"菠萝"},
+    {points:45,image:"assets/fruit-8.jpg",fallbackImage:"assets/fruit-8.svg",name:"椰子"},
+    {points:55,image:"assets/fruit-9.jpg",fallbackImage:"assets/fruit-9.svg",name:"西瓜"},
+    {points:70,image:"assets/fruit-10.jpg",fallbackImage:"assets/fruit-10.svg",name:"彩虹瓜"}
+  ].map((d,i)=>({...d,radius:Math.round(BASE_RADII[i]*SIZE_SCALE)}));
   const COLORS=["#dd3347","#ef4c61","#955ebe","#f59a35","#e84b46","#ffa187","#bfd960","#efb841","#8a5a40","#49a95d","#798de7"];
   const canvas=document.querySelector("#game-canvas"),wrap=document.querySelector("#game-wrap"),scoreEl=document.querySelector("#score"),bestEl=document.querySelector("#best-score"),preview=document.querySelector("#next-fruit"),over=document.querySelector("#game-over");
-  const engine=Engine.create({gravity:{y:1.05,scale:.001}}),render=Render.create({canvas,engine,options:{width:W,height:H,wireframes:false,background:"transparent",pixelRatio:window.devicePixelRatio||1}}),runner=Runner.create();
+  const engine=Engine.create({gravity:{y:1.05,scale:.001},enableSleeping:true}),render=Render.create({canvas,engine,options:{width:W,height:H,wireframes:false,background:"transparent",pixelRatio:window.devicePixelRatio||1}}),runner=Runner.create();
   function loadImage(image,data){let usedFallback=false;image.onerror=()=>{if(!usedFallback&&data.fallbackImage){usedFallback=true;image.src=data.fallbackImage}};image.src=data.image}
   const images=LEVELS.map(data=>{const i=new Image();loadImage(i,data);return i});let score=0,best=Number(localStorage.getItem("watermelonBest")||0),next=randomLevel(),canDrop=true,ended=false,cooldown=0,dangerFrames=0;
   bestEl.textContent=best;
   function randomLevel(){return Math.random()<.68?0:Math.random()<.72?1:2}
-  function makeFruit(x,y,level){const d=LEVELS[level],b=Bodies.circle(x,y,d.radius,{restitution:.18,friction:.055,frictionAir:.004,density:.0014,label:"fruit",render:{fillStyle:COLORS[level],strokeStyle:"rgba(92,52,30,.18)",lineWidth:2}});b.game={level,bornAt:engine.timing.timestamp,merging:false};return b}
+  function makeFruit(x,y,level){const d=LEVELS[level],b=Bodies.circle(x,y,d.radius,{restitution:.18,friction:.3,frictionStatic:.6,frictionAir:.02,density:.0014,label:"fruit",render:{fillStyle:COLORS[level],strokeStyle:"rgba(92,52,30,.18)",lineWidth:2}});b.game={level,bornAt:engine.timing.timestamp,merging:false};return b}
   function resetWorld(){Composite.clear(engine.world,false);Composite.add(engine.world,[Bodies.rectangle(W/2,FLOOR_Y+WALL/2,PLAY_WIDTH,WALL,{isStatic:true,render:{visible:false}}),Bodies.rectangle(PLAY_LEFT-WALL/2,H/2,WALL,H*2,{isStatic:true,render:{visible:false}}),Bodies.rectangle(PLAY_RIGHT+WALL/2,H/2,WALL,H*2,{isStatic:true,render:{visible:false}})])}
   function updatePreview(){const d=LEVELS[next];preview.replaceChildren();const i=new Image();loadImage(i,d);i.alt=`待投放：${d.name}`;preview.append(i)}
   function addScore(n){score+=n;scoreEl.textContent=score;if(score>best){best=score;bestEl.textContent=best;localStorage.setItem("watermelonBest",String(best))}}
