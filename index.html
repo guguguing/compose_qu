@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>合成大笨蛋</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="overrides.css">
+</head>
+<body>
+  <main class="app">
+    <header><div><p>MERGE &amp; GROW</p><h1>合成大笨蛋</h1></div><div class="score">得分<strong id="score">0</strong></div><div class="score best">最高分<strong id="best-score">0</strong></div></header>
+    <section class="layout">
+      <div><div id="game-wrap"><canvas id="game-canvas" width="520" height="700"></canvas><div id="game-over" hidden><p>本局得分</p><strong id="final-score">0</strong><h2>游戏结束</h2><button id="restart-overlay">再来一局</button></div></div><p class="hint">移动到目标位置，点击（或触摸松开）投放群u。</p></div>
+      <aside><section class="next"><p>待投放群u</p><div id="next-fruit"></div><small>下一次点击会投放它</small></section><section class="rules"><h2>玩法</h2><ol><li>相同群u碰撞会合成更大一级。</li><li>别让群u长期超过危险线。</li><li>绿色地面上沿就是实际碰撞地面。</li></ol></section><button id="restart-button">↻ 重新开始</button></aside>
+    </section>
+    <footer>替换 <code>assets/fruit-*.svg</code> 即可自定义主题。</footer>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script><script src="game.js"></script>
+</body></html>
